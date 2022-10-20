@@ -1,6 +1,3 @@
-from __future__ import print_function
-from cmath import pi
-from importlib import import_module
 from os import system
 import sqlite3
 import time
@@ -13,13 +10,12 @@ class ProgramaPrincipal:
             print("Menu de opciones Concesionaria")
             print("-------------------------------")
             print("1- Cargar automovil")
-            print("2- Modificar automovil")
+            print("2- Modificar precio automovil")
             print("3- Eliminar automovil")
             print("4- Cargar disponibilidad automovil")
             print("5- Listado automoviles\n")
-            print("6- Actualizar precios motocicletas")
-            print("7- Mostrar registro de motocicletas anteriores a una fecha en especifico")
-            print("0- Salir\n")
+            print("6- Ingresar al menú motocicletas")
+            print("\n0- Salir\n")
             try:
                 nro = int(input("Por favor ingrese un número: "))
             
@@ -51,15 +47,10 @@ class ProgramaPrincipal:
                 if nro == 5:
                     programa.listado_automoviles()
                 if nro == 6:
-                    fecha = input("Ingrese fecha del dia (formato AAAA-MM-DD):")
-                    porcentaje = int(input("Ingrese el porcentaje de aumento: "))
-                    programa.actualizar_precios(fecha, porcentaje)
-                if nro == 7:
-                    fecha = input("Ingrese fecha (formato AAAA-MM-DD):")
-                    programa.consultar_historico_motocicletas(fecha)
+                    programa.subMenu()
                 if nro == 0:
                     break
-                if nro < 0 or nro > 7:
+                if nro < 0 or nro > 6:
                     print("Opcion ingresada no valida... ")
 
                 aux = input("\nPresione enter para continuar...")
@@ -73,6 +64,58 @@ class ProgramaPrincipal:
 
         print("¡Gracias por utilizar nuestro programa!\n")
         time.sleep(2)
+
+    def subMenu(self):
+        while True:
+            system("cls")
+            print("MENU MOTOCICLETAS:")
+            print("-------------------")
+            print("1- Cargar motocicleta\n2- Modificar precio motocicleta\n3- Eliminar motocicleta")
+            print("4- Actualizar precios motocicletas")
+            print("5- Mostrar registro de motocicletas anteriores a una fecha en especifico")
+            print("6- Mostrar registro(historico) de motocicletas anteriores a una fecha en especifico")
+            print("\n0- Volver al menú principal\n")
+            op = int(input("Por favor ingrese un número: "))
+            system("cls")
+
+            if op == 1:
+                marca = input("Por favor ingrese la marca de la motocicleta: ")
+                modelo = input("Por favor ingrese el modelo de la motocicleta: ")
+                cilindrada = input("Por favor ingrese la cilindrada de la motocicleta: ")
+                color = input("Por favor ingrese el color de la motocicleta: ")
+                precio = input("Por favor ingrese el precio de la motocicleta: $")
+                nueva_moto = motocicletas(marca,modelo,cilindrada,color,precio)
+                nueva_moto.cargar_motocicleta()
+            if op == 2:
+                marca = input("Por favor ingrese la marca de la motocicleta: ")
+                modelo = input("Por favor ingrese el modelo de la motocicleta: ")
+                precio = input("Por favor ingrese el nuevo precio: $")
+                cilindrada = ""
+                color = ""
+                nueva_moto = motocicletas(marca,modelo, cilindrada, color, precio)
+                nueva_moto.modificar_motocicleta()
+            if op == 3:
+                marca = input("Por favor ingrese la marca de la motocicleta: ")
+                modelo = input("Por favor ingrese el modelo de la motocicleta: ")
+                nueva_moto = motocicletas(marca,modelo)
+                nueva_moto.eliminar_motocicleta()
+            if op == 4:
+                    porcentaje = int(input("Ingrese el porcentaje de aumento: "))
+                    programa.actualizar_precios(porcentaje)
+            if op == 5:
+                    fecha = input("Ingrese fecha (formato AAAA-MM-DD):")
+                    programa.consultar_motocicletas(fecha)
+            if op == 6:
+                    fecha = input("Ingrese fecha (formato AAAA-MM-DD):")
+                    programa.consultar_historico_motocicletas(fecha)
+            if op == 0:
+                print("Volviendo al menú principal...")
+                break
+            if op < 0 or op > 6:
+                print("Opcion ingresada no valida... ")
+
+            
+            aux = input("\nPresione enter para continuar...")
 
     def crearTablas(self):
         conexion = Conexiones()
@@ -88,7 +131,7 @@ class ProgramaPrincipal:
         conexion.miCursor.execute("DROP TABLE IF EXISTS HISTORICO_MOTOCICLETAS") #BORRO LA TABLA DE HISTORICOS_MOTOCICLETAS Y LA CREO
         conexion.miCursor.execute("CREATE TABLE HISTORICO_MOTOCICLETAS (id_moto INTEGER PRIMARY KEY , marca  VARCHAR(30) ,modelo  VARCHAR(30),cilindrada VARCHAR(30),color VARCHAR(30),precio INTEGER NOT NULL,fechaUltimoPrecio DATETIME)")
         conexion.miCursor.execute("DROP TABLE IF EXISTS MOTOCICLETAS")
-        conexion.miCursor.execute("CREATE TABLE MOTOCICLETAS (id_moto INTEGER PRIMARY KEY , marca  VARCHAR(30) ,modelo  VARCHAR(30),cilindrada VARCHAR(30),color VARCHAR(30),precio INTEGER NOT NULL,fechaUltimoPrecio DATETIME)")    
+        conexion.miCursor.execute("CREATE TABLE MOTOCICLETAS (id_moto INTEGER PRIMARY KEY , marca  VARCHAR(30) ,modelo  VARCHAR(30),cilindrada VARCHAR(30),color VARCHAR(30),precio INTEGER NOT NULL,fechaUltimoPrecio DATETIME DEFAULT CURRENT_TIMESTAMP)")    
         conexion.miConexion.commit()       
         conexion.cerrarConexion()
 
@@ -133,7 +176,7 @@ class ProgramaPrincipal:
         finally:
             conexion.cerrarConexion()
 
-    def actualizar_precios(self, fecha, porcentaje):
+    def actualizar_precios(self, porcentaje):
         programa.actualizarHistoricoMotocicletas()
 
         conexion = Conexiones()
@@ -147,20 +190,35 @@ class ProgramaPrincipal:
                 id = motos[0]
                 precio =motos[1]
                 precio = precio + (precio*(porcentaje/100))
-                conexion.miCursor.execute("UPDATE MOTOCICLETAS SET precio='{}', fechaUltimoPrecio ='{}' where id_moto='{}'  ".format(precio, fecha, id))
+                conexion.miCursor.execute("UPDATE MOTOCICLETAS SET precio='{}', fechaUltimoPrecio = CURRENT_TIMESTAMP where id_moto='{}'  ".format(precio, id))
                 conexion.miConexion.commit()
             
-            print("Precios actualizados correctamente")
+            print("\nPrecios actualizados correctamente")
 
         except:
             print("Error: No se pudo actualizar los precios")
         finally:
             conexion.cerrarConexion()
+
+    def consultar_motocicletas(self, fecha):
+        conexion = Conexiones()
+        conexion.abrirConexion()
+        try:                        
+            conexion.miCursor.execute("SELECT * FROM MOTOCICLETAS WHERE fechaUltimoPrecio <= '{}' ".format(fecha))
+            fechas = conexion.miCursor.fetchall()
+
+            print("LISTADO DE MOTOCICLETAS:\nID\tMARCA\tMODELO\tCILINDRADA\tCOLOR\tPRECIO\tFECHA")
+            print("---------------------------------------------------------------")
+            for i in fechas:
+                moto = i
+                print(f'{moto[0]}\t{moto[1]}\t{moto[2]}\t{moto[3]}\t\t{moto[4]}\t${moto[5]}\t{moto[6]}')
+        except:
+            print("Error al consultar datos")
     
     def consultar_historico_motocicletas(self, fecha):
         conexion = Conexiones()
-        conexion.abrirConexion() #Cuando hago un SELECT * HISTORICO_MOTOCICLETAS, me trae toda la tabla a la variable fechas
-        try:                        #Pero cuando pongo WHERE, la funcion sale por el except. -- fechaUltimoPrecio es de tipo DATETIME
+        conexion.abrirConexion()
+        try:                        
             conexion.miCursor.execute("SELECT * FROM HISTORICO_MOTOCICLETAS WHERE fechaUltimoPrecio <= '{}' ".format(fecha))
             fechas = conexion.miCursor.fetchall()
 
@@ -268,7 +326,7 @@ class Automovil:
 
 
 class motocicletas:
-    def __init__(self, marca, modelo, cilindrada,color,fechaUltimoPrecio,precio=None):
+    def __init__(self, marca, modelo, cilindrada = None,color = None,precio=None, fechaUltimoPrecio= None):
         self.marca = marca
         self.modelo = modelo
         self.cilindrada = cilindrada
@@ -281,12 +339,62 @@ class motocicletas:
         conexion.abrirConexion()
 
         try:
-            conexion.miCursor.execute("INSERT INTO MOTOCICLETAS(marca,modelo,cilindrada,color,precio,fechaUltimoPrecio) VALUES('{}', '{}','{}','{}','{}','{}')".format(self.marca, self.modelo, self.cilindrada, self.color, self.precio, self.fechaUltimoPrecio))
+            conexion.miCursor.execute("INSERT INTO MOTOCICLETAS(marca,modelo,cilindrada,color,precio) VALUES('{}', '{}','{}','{}','{}')".format(self.marca, self.modelo, self.cilindrada, self.color, self.precio))
             conexion.miConexion.commit()
+
+            print("\nMotocicleta cargada correctamente")
         except:
             pass
         finally:
             conexion.cerrarConexion()
+
+    def modificar_motocicleta(self):
+        conexion = Conexiones()
+        conexion.abrirConexion()
+        print("\n---------------------------------\n")
+        try:
+            conexion.miCursor.execute("SELECT marca FROM MOTOCICLETAS")
+            marca = str(conexion.miCursor.fetchall())
+
+            conexion.miCursor.execute("SELECT modelo FROM MOTOCICLETAS")
+            modelo = str(conexion.miCursor.fetchall())
+
+            if modelo.find(self.modelo) != -1 and marca.find(self.marca) != -1:
+                conexion.miCursor.execute("UPDATE MOTOCICLETAS SET precio='{}', fechaUltimoPrecio = CURRENT_TIMESTAMP where marca='{}' and modelo='{}' ".format(self.precio,self.marca,self.modelo))
+                conexion.miConexion.commit()
+                print("Motocicleta modificada correctamente")
+            else:
+                print("Modelo no encontrado")
+
+        except:
+            print('Error al actualizar la motocicleta')
+        finally:
+            conexion.cerrarConexion()  
+
+
+    def eliminar_motocicleta(self):
+        conexion = Conexiones()
+        conexion.abrirConexion()
+        print("\n---------------------------------\n")
+        try:
+            conexion.miCursor.execute("SELECT marca FROM MOTOCICLETAS")
+            marca = str(conexion.miCursor.fetchall())
+
+            conexion.miCursor.execute("SELECT modelo FROM MOTOCICLETAS")
+            modelo = str(conexion.miCursor.fetchall())
+
+            if modelo.find(self.modelo) != -1 and marca.find(self.marca) != -1:
+                conexion.miCursor.execute("DELETE FROM MOTOCICLETAS where marca='{}' and modelo='{}' ".format(self.marca,self.modelo))
+                conexion.miConexion.commit()
+                print("Motocicleta eliminada correctamente")
+            else:
+                print("Modelo no encontrado")
+
+        except:
+            print('Error al eliminar la motocicleta')
+        finally:
+            conexion.cerrarConexion()  
+    
     
 
 class Conexiones:
@@ -298,23 +406,36 @@ class Conexiones:
     def cerrarConexion(self):
         self.miConexion.close()   
 
-
-#Creo las MOTOCICLETAS
-
-moto1 = motocicletas("Honda", "Titan", "150cc","roja","2022-10-16",100000)
-moto2 = motocicletas("Honda", "wave", "110cc","negra","2022-10-16",300000)
-moto3 = motocicletas("Honda", "tornado", "200cc","azul","2022-10-16",200000)
-
-
-
-            
 programa = ProgramaPrincipal()
 programa.crearTablas()
 programa.crearTablaMotocicleta()
 
+
+##<--------SE DEJAN CARGADOS 3 AUTOMOVILES Y 3 MOTOCICLETAS PARA FACILITAR EL TESTEO DE LAS OPCIONES DEL MENU------>
+
+#Creo los AUTOMOVILES 
+
+auto1 = Automovil("ford","fiesta",100000,10)
+auto2 = Automovil("ford","ka",200000,20)
+auto3 = Automovil("fiat","uno",300000,30)
+
+#Creo las MOTOCICLETAS
+
+moto1 = motocicletas("honda", "titan", "150cc","roja",100000)
+moto2 = motocicletas("honda", "wave", "110cc","negra",300000)
+moto3 = motocicletas("yamaha", "fz", "150cc","azul",200000)
+
+
+            
 #Cargamos las motocicletas a la base de datos
 moto1.cargar_motocicleta()
 moto2.cargar_motocicleta()
 moto3.cargar_motocicleta()
+
+#Cargamos los automoviles a la base de datos
+auto1.cargar_automovil()
+auto2.cargar_automovil()
+auto3.cargar_automovil()
+
 
 programa.menu()
